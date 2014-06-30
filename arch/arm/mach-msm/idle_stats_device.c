@@ -20,6 +20,7 @@
 #include <linux/idle_stats_device.h>
 #include <linux/module.h>
 
+#define BUSY_TIMER_START_DELTA 100
 DEFINE_MUTEX(device_list_lock);
 LIST_HEAD(device_list);
 
@@ -262,9 +263,11 @@ void msm_idle_stats_idle_end(struct msm_idle_stats_device *device,
 		     */
 		    tmp = device->stats->nr_collected - 1;
 		    if (tmp > 0) {
-			if ((device->stats->pulse_chain[tmp - 1].busy_start_time
-			+ device->stats->pulse_chain[tmp - 1].busy_interval) >
-			  device->stats->pulse_chain[tmp].busy_start_time)
+			int total_time =
+			device->stats->pulse_chain[tmp].busy_start_time -
+			device->stats->pulse_chain[tmp - 1].busy_start_time;
+			if ((total_time + BUSY_TIMER_START_DELTA) <
+			device->stats->pulse_chain[tmp - 1].busy_interval)
 				msm_idle_stats_update_event(device,
 				   MSM_IDLE_STATS_EVENT_BUSY_TIMER_EXPIRED);
 		    }
